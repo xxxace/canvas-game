@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="./static//js/resourceLoader.js"></script>
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #333;
+        }
+
+        #can {
+            display: block;
+            margin: 180px auto;
+            border: 1px solid #fff;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="can"></canvas>
+
+    <script>
+        const canvas = document.getElementById('can');
+        const ctx = canvas.getContext('2d');
+
+        const CANVAS_WIDTH = canvas.width = 800;
+        const CANVAS_HEIGHT = canvas.height = 700;
+
+        const resourceLoader = new ResourceLoader({
+            resources: {
+                'layer1': 'https://www.frankslaboratory.co.uk/downloads/layer-1.png',
+                'layer2': 'https://www.frankslaboratory.co.uk/downloads/layer-2.png',
+                'layer3': 'https://www.frankslaboratory.co.uk/downloads/layer-3.png',
+                'layer4': 'https://www.frankslaboratory.co.uk/downloads/layer-4.png',
+                'layer5': 'https://www.frankslaboratory.co.uk/downloads/layer-5.png'
+            }
+        });
+
+        let x = 0;
+        let x2 = 2400;
+        let gameSpeed = 5;
+        let resources = {};
+        resourceLoader.load((map) => {
+            resources = Object.assign({}, map);
+            animate();
+        });
+
+        function animate() {
+            ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+            const keys = Object.keys(resources);
+            for (let i = 0; i < keys.length; i++) {
+                ctx.drawImage(resources[keys[i]], x, 0);
+                ctx.drawImage(resources[keys[i]], x2, 0);
+            }
+
+            x = x < -2400 ? 2400 + x2 - gameSpeed : x -= gameSpeed;
+            x2 = x2 < -2400 ? 2400 + x - gameSpeed : x2 -= gameSpeed;
+            requestAnimationFrame(animate);
+        }
+    </script>
+</body>
+
+</html>
