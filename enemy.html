@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="./static/js/canvasFactory.js"></script>
+    <script src="./static/js/resourceLoader.js"></script>
+    <script src="./static/js/enemy.js"></script>
+    <style>
+        canvas {
+            display: block;
+            border: 1px solid #000;
+        }
+    </style>
+</head>
+<!-- https://www.frankslaboratory.co.uk/downloads/enemy5.png -->
+
+<body>
+    <div id="canvas1"></div>
+    <div id="canvas2"></div>
+    <div id="canvas3"></div>
+    <div id="canvas4"></div>
+    <script>
+        const resourceLoader = new ResourceLoader({
+            resources: {
+                enemy1: `./static/assets/png/enemy1.png`,
+                enemy2: `./static/assets/png/enemy2.png`,
+                enemy3: `./static/assets/png/enemy3.png`,
+                enemy4: `./static/assets/png/enemy4.png`,
+            }
+        });
+
+        const canvas1 = new CanvasFactory({ el: '#canvas1' });
+        const ctx1 = canvas1.getContext('2d');
+        canvas1.mount();
+
+        const canvas2 = new CanvasFactory({ el: '#canvas2' });
+        const ctx2 = canvas2.getContext('2d');
+        canvas2.mount();
+
+        resourceLoader.load((map)=>{
+            console.log(map)
+        });
+    </script>
+</body>
+
+</html>
