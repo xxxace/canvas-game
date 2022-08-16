@@ -6,6 +6,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
+    <script src="./static/js/game.js"></script>
     <script src="./static//js/resourceLoader.js"></script>
     <style>
         * {
@@ -20,21 +21,49 @@
 
         #can {
             display: block;
-            margin: 180px auto;
             border: 1px solid #fff;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding-top: 100px;
+        }
+
+        .control-panel {
+            display: flex;
+            flex-direction: column;
+            width: 800px;
+            padding: 10px 0;
+            color: #fff;
         }
     </style>
 </head>
 
 <body>
-    <canvas id="can"></canvas>
-
+    <div class="container">
+        <canvas id="can"></canvas>
+        <div class="control-panel">
+            <p>game speed: <span id="gameSpeedV">10</span></p>
+            <input type="range" min="0" max="40" value="10" class="slider">
+        </div>
+    </div>
     <script>
+
         const canvas = document.getElementById('can');
         const ctx = canvas.getContext('2d');
-
+        const gameSpeedV = document.querySelector('#gameSpeedV');
+        const speedRanger = document.querySelector('.slider');
+        const gameController = new GameController({ ctx: ctx, gameSpeed: 10 });
         const CANVAS_WIDTH = canvas.width = 800;
         const CANVAS_HEIGHT = canvas.height = 700;
+
+        speedRanger.addEventListener('input', function (e) {
+            gameController.setGameSpeed(Number(e.target.value));
+            gameSpeedV.innerText = e.target.value;
+        });
 
         const resourceLoader = new ResourceLoader({
             resources: {
@@ -50,22 +79,25 @@
         let x2 = 2400;
         let gameSpeed = 5;
         let resources = {};
+        let layers = []
         resourceLoader.load((map) => {
             resources = Object.assign({}, map);
+            const keys = Object.keys(resources);
+            const speeds = [0.2, 0.4, 0.6, 0.8, 1];
+            for (let i = 0; i < keys.length; i++) {
+                layers.push(new Layer(resources[keys[i]], speeds[i]));
+            }
             animate();
         });
 
         function animate() {
             ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-            const keys = Object.keys(resources);
-            for (let i = 0; i < keys.length; i++) {
-                ctx.drawImage(resources[keys[i]], x, 0);
-                ctx.drawImage(resources[keys[i]], x2, 0);
+            for (let i = 0; i < layers.length; i++) {
+                layers[i].update();
+                layers[i].draw();
             }
 
-            x = x < -2400 ? 2400 + x2 - gameSpeed : x -= gameSpeed;
-            x2 = x2 < -2400 ? 2400 + x - gameSpeed : x2 -= gameSpeed;
             requestAnimationFrame(animate);
         }
     </script>
