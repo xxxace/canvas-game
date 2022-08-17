@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="./static/js/canvasFactory.js"></script>
+    <script src="./static/js/resourceLoader.js"></script>
+    <style>
+        canvas {
+            border: 1px solid #000;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="canvas"></div>
+
+    <script>
+        const resourceLoader = new ResourceLoader({
+            resources: {
+                boom: `./static/assets/png/boom.png`
+            }
+        })
+        const canvas = new CanvasFactory({
+            el: '#canvas'
+        });
+
+        const ctx = canvas.getContext('2d');
+        canvas.mount();
+
+        class Exploding {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.spriteWidth = 200;
+                this.spriteHeight = 173;
+                this.width = this.spriteWidth * 0.7;
+                this.height = this.spriteHeight * 0.7;
+                this.frame = 0;
+                this.time = 0;
+                this.angle = Math.random() * 6.2;
+            }
+
+            update() {
+                if (this.time % 10 === 0) {
+                    this.frame++;
+                }
+                this.time++;
+            }
+
+            render() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.angle);
+                ctx.drawImage(resourceLoader.map.boom, this.frame * this.spriteWidth, 0, this.spriteWidth, this.spriteHeight, 0 - this.width / 2, 0 - this.height / 2, this.width, this.height);
+                ctx.restore();
+            }
+        }
+
+        const explodings = [];
+        resourceLoader.load((map) => {
+            canvas.canvas.addEventListener('click', (e) => {
+                const explode = new Exploding(e.offsetX, e.offsetY);
+                explodings.push(explode);
+            });
+
+            animate();
+        });
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.canvas.width, canvas.canvas.height)
+            for (let i = 0; i < explodings.length; i++) {
+                const explode = explodings[i];
+                explode.update();
+                explode.render();
+                if (explode.frame > 5) {
+                    explodings.splice(i, 1);
+                    i--;
+                }
+            }
+
+            requestAnimationFrame(animate);
+        }
+    </script>
+</body>
+
+</html>
