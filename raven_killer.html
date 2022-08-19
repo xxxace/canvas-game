@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="./static/js/resourceLoader.js"></script>
+    <script src="./static/js/canvasFactory.js"></script>
+    <style>
+        canvas {
+            border: 1px solid #000;
+        }
+
+        button {
+            user-select: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="can"></div>
+    <button id="the-world">砸挖路哆</button>
+    <button id="continua">继续</button>
+    <script>
+        let missingCount = 0;
+        const resourceLoader = new ResourceLoader({
+            resources: {
+                boom: './static/assets/png/boom.png',
+                raven: './static/assets/png/raven.png'
+            }
+        });
+
+        const canvasFactory = new CanvasFactory({
+            el: '#can',
+            width: window.innerWidth * 0.7,
+            height: window.innerHeight * 0.7
+        });
+        const canvas = canvasFactory.canvas;
+        const ctx = canvasFactory.getContext('2d');
+        canvasFactory.mount();
+
+
+        class Exploding {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.spriteWidth = 200;
+                this.spriteHeight = 173;
+                this.width = this.spriteWidth * 0.5;
+                this.height = this.spriteHeight * 0.5;
+                this.frame = 0;
+                this.time = -1;
+                this.angle = Math.random() * 6.2;
+                this.sound = new Audio();
+                this.sound.src = './static/assets/sound/pistol.wav';
+            }
+
+            update() {
+                if (this.frame === 0) this.sound.play();
+                if (this.time % 4 === 0) {
+                    this.frame++;
+                }
+                this.time++;
+            }
+
+            render() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.angle);
+                ctx.drawImage(resourceLoader.map.boom, this.frame * this.spriteWidth, 0, this.spriteWidth, this.spriteHeight, 0 - this.width / 2, 0 - this.height / 2, this.width, this.height);
+                ctx.restore();
+            }
+        }
+
+        class Raven {
+            constructor() {
+                this.sacle = Math.random() * 0.3 + 0.3;
+                this.sprite = resourceLoader.map.raven;
+                this.spriteFrame = 6;
+                this.spriteWidth = 271;
+                this.spriteHeight = 194;
+                this.width = this.spriteWidth * this.sacle;
+                this.height = this.spriteHeight * this.sacle;
+                this.x = canvas.width;
+                this.y = Math.random() * (canvas.height - this.height);
+                this.dx = Math.random() * 5 + 3;
+                this.dy = Math.random() * 5 - 2.5;
+                this.time = 0;
+                this.frame = 0;
+                this.visible = true;
+                this.flapToNext = 0;
+                this.flapInterval = Math.random() * 50 + 50;
+            }
+
+            update(deltatime) {
+                if (this.y < 0 || this.y > canvas.height - this.height) {
+                    this.dy *= -1;
+                }
+                this.time++;
+                this.x -= this.dx;
+                this.y += this.dy;
+                if (this.x < 0 - this.width) {
+                    missingCount++;
+                    this.visible = false;
+                }
+                this.flapToNext += deltatime;
+                if (this.flapToNext > this.flapInterval) {
+                    // if (this.time % 2) this.frame++;
+                    if (this.frame > this.spriteFrame - 2) {
+                        this.frame = 0;
+                    } else {
+                        this.frame++;
+                    }
+                    this.flapToNext = 0;
+                }
+            }
+
+            render() {
+                ctx.drawImage(this.sprite, this.frame * this.spriteWidth, 0, this.spriteWidth, this.spriteHeight, this.x, this.y, this.width, this.height);
+            }
+        }
+
+        let ravens = [];
+        let clicks = [];
+        let explodings = [];
+        let deltatime = 0;
+        let lasttime = 0;
+        let timeToNextRaven = 0;
+        let ravenIterval = 500;
+
+        let animationFrameKey = null;
+        let hitCount = 0;
+
+        function animate(timestamp) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            deltatime = timestamp - lasttime;
+            lasttime = timestamp;
+            timeToNextRaven += deltatime;
+            if (timeToNextRaven > ravenIterval) {
+                ravens.push(new Raven());
+                timeToNextRaven = 0;
+            }
+
+            // clicks.forEach(click => {
+            //     ctx.beginPath();
+            //     ctx.fillStyle = 'red';
+            //     ctx.fillRect(click.x, click.y, 10, 10);
+            //     ctx.closePath();
+            // });
+
+            ravens.forEach(raven => {
+                raven.update(deltatime);
+                raven.render();
+            });
+
+            explodings.forEach(exploding => {
+                exploding.update();
+                exploding.render();
+            });
+
+            ravens = ravens.filter(r => r.visible);
+            explodings = explodings.filter(e => e.frame < 5);
+            ctx.beginPath();
+            ctx.fillStyle = 'black';
+            ctx.font = '20px Impact';
+            ctx.fillText(`score: ${hitCount}`, 10, 30);
+            ctx.fillText(`missing: ${missingCount}`, 10, 60);
+            ctx.closePath();
+
+            animationFrameKey = requestAnimationFrame(animate);
+        }
+
+        resourceLoader.load((map) => {
+            animate(0);
+
+            canvas.addEventListener('click', (e) => {
+                const { offsetX, offsetY } = e;
+                const explode = new Exploding(offsetX, offsetY);
+                clicks.push({ x: offsetX, y: offsetY });
+                explodings.push(explode);
+
+                for (let i = ravens.length - 1; i >= 0; i--) {
+                    const raven = ravens[i];
+                    if (
+                        raven.x > offsetX + 10 ||
+                        raven.x + raven.width < offsetX ||
+                        raven.y > offsetY + 10 ||
+                        raven.y + raven.height < offsetY
+                    ) {
+                        console.log('no collision')
+                        continue;
+                    } else {
+                        if (!raven.visible) continue;
+                        hitCount++;
+                        raven.visible = false;
+                        break
+                    }
+                }
+            });
+
+            const theWorld = document.getElementById('the-world');
+            const continua = document.getElementById('continua');
+            theWorld.addEventListener('click', () => {
+                cancelAnimationFrame(animationFrameKey);
+                animationFrameKey = null;
+            });
+
+            continua.addEventListener('click', (e) => {
+                cancelAnimationFrame(animationFrameKey);
+                animationFrameKey = requestAnimationFrame(animate);
+            });
+        });
+    </script>
+</body>
+
+</html>
