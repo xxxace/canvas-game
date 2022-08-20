@@ -180,6 +180,11 @@
             }
 
             render() {
+                this.drawLine();
+                super.render();
+            }
+
+            drawLine() {
                 ctx.save();
                 ctx.beginPath();
                 ctx.globalAlpha = 0.4;
@@ -188,7 +193,6 @@
                 ctx.stroke();
                 ctx.closePath();
                 ctx.restore();
-                super.render();
             }
         }
 
