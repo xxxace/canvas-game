@@ -176,7 +176,7 @@
                 super.update(deltatime);
                 this.y += this.dy * deltatime;
                 if (this.y >= this.maxLength) this.dy *= -1;
-                if (this.y < 0 - this.height) this.markForDelete = true;
+                if (this.y < 0 - this.height || this.y > canvas.height) this.markForDelete = true;
             }
 
             render() {
