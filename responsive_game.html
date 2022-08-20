@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="./static/js/canvasFactory.js"></script>
+    <script src="./static/js/resourceLoader.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            position: relative;
+            padding: 0;
+            margin: 0;
+            background-color: black;
+            overflow: hidden;
+        }
+
+        #can {
+            width: 100%;
+            height: 100vh;
+        }
+
+        canvas {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border: 5px solid #fff;
+            max-width: 100%;
+            max-height: 100%;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="can"></div>
+    <script>
+        const canvasFactory = new CanvasFactory({
+            el: '#can',
+            width: 1200,
+            height: 720
+        });
+        const canvas = canvasFactory.canvas;
+        const ctx = canvas.getContext('2d');
+        canvasFactory.mount();
+
+        const resourceLoader = new ResourceLoader({
+            resources: {
+                player: './static/assets/png/player.png',
+                background_single: './static/assets/png/background_single.png',
+                enemy_1: './static/assets/png/enemy_1.png'
+            }
+        });
+
+        let enemies = [];
+
+        resourceLoader.load(map => {
+            class InputHandler {
+                constructor() {
+                    this.keys = [];
+                    this.includeKeys = ['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight'];
+
+                    window.addEventListener('keydown', (e) => {
+                        if (this.includeKeys.includes(e.key) && !this.keys.includes(e.key)) {
+                            this.keys.push(e.key);
+                        }
+                    });
+
+                    window.addEventListener('keyup', (e) => {
+                        if (this.includeKeys.includes(e.key)) {
+                            this.keys.splice(this.keys.indexOf(e.key), 1);
+                        }
+
+                        if (e.key === 'Enter' && gameOver) restart();
+                    });
+
+                    this.touchX = 0;
+                    this.touchY = 0;
+                    this.moveLimit = 30;
+
+                    window.addEventListener('touchstart', (e) => {
+                        this.touchX = e.changedTouches[0].pageX;
+                        this.touchY = e.changedTouches[0].pageY;
+                    });
+
+                    window.addEventListener('touchmove', (e) => {
+                        const swipeDistanceX = e.changedTouches[0].pageX - this.touchX;
+                        const swipeDistanceY = e.changedTouches[0].pageY - this.touchY;
+
+                        if (Math.abs(swipeDistanceX) >= this.moveLimit) {
+                            if (swipeDistanceX < 0) {
+                                if (!this.keys.includes('SwipeLeft')) this.keys.push('SwipeLeft');
+                            } else {
+                                if (!this.keys.includes('SwipeRight')) this.keys.push('SwipeRight');
+                            }
+                        }
+
+                        if (Math.abs(swipeDistanceY) >= this.moveLimit) {
+                            if (swipeDistanceY < 0) {
+                                if (!this.keys.includes('SwipeUp')) this.keys.push('SwipeUp');
+                            } else {
+                                if (!this.keys.includes('SwipeDown')) this.keys.push('SwipeDown');
+                            }
+                        }
+                    });
+
+                    window.addEventListener('touchend', (e) => {
+                        if (gameOver) restart();
+                        this.keys.splice(this.keys.indexOf('SwipeUp'), 1);
+                        this.keys.splice(this.keys.indexOf('SwipeDown'), 1);
+                        this.keys.splice(this.keys.indexOf('SwipeLeft'), 1);
+                        this.keys.splice(this.keys.indexOf('SwipeRight'), 1);
+                    });
+                }
+            }
+
+            class Player {
+                constructor() {
+                    this.scale = 0.5;
+                    this.sprite = map.player;
+                    this.spriteWidth = 200;
+                    this.spriteHeight = 200;
+                    this.status = 'run';
+                    this.statusMap = {
+                        run: {
+                            x: 0,
+                            y: 0,
+                            frame: 9
+                        },
+                        jump: {
+                            x: 0,
+                            y: 200,
+                            frame: 7
+                        }
+                    }
+
+                    this.width = this.spriteWidth * this.scale;
+                    this.height = this.spriteHeight * this.scale;
+                    this.x = 0;
+                    this.dx = 1;
+                    this.y = canvas.height - this.height;
+                    this.dy = 0;
+                    this.weight = 1;
+                    this.frame = 0;
+                    this.gameFrame = 0;
+                    this.toNextFrame = 16 * 1;
+                }
+
+                restart() {
+                    this.status = 'run';
+                    this.x = 0;
+                    this.dx = 1;
+                    this.y = canvas.height - this.height;
+                    this.dy = 0;
+                    this.weight = 1;
+                    this.frame = 0;
+                    this.gameFrame = 0;
+                }
+
+                update(deltatime, inputHandler, enemise) {
+                    const status = this.statusMap[this.status];
+
+                    enemise.forEach(enemy => {
+                        const x = enemy.x - this.x;
+                        const y = enemy.y - this.y;
+                        const distance = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2));
+
+                        if (distance <= ((this.width / 2) + (enemy.width / 2))) {
+                            console.log('hit');
+                            gameOver = true;
+                        }
+                    });
+
+                    if (inputHandler.keys.includes('ArrowLeft') || inputHandler.keys.includes('SwipeLeft')) {
+                        this.dx = -15
+                    } else if (inputHandler.keys.includes('ArrowRight') || inputHandler.keys.includes('SwipeRight')) {
+                        this.dx = 15
+                    } else {
+                        this.dx = 0
+                    }
+
+                    if (this.isOnGround() && (inputHandler.keys.includes('ArrowUp') || inputHandler.keys.includes('SwipeUp'))) {
+                        this.status = 'jump';
+                        this.dy = -20;
+                    }
+
+                    if (this.gameFrame > this.toNextFrame) {
+                        if (this.frame < status.frame - 1) this.frame++;
+                        else this.frame = 0;
+
+                        this.x += this.dx;
+                        this.y += this.dy;
+
+                        if (this.x < 0) {
+                            this.x = 0
+                        }
+
+                        if (this.x >= canvas.width - this.width) {
+                            this.x = canvas.width - this.width;
+                        }
+
+                        if (!this.isOnGround()) {
+                            this.dy += this.weight;
+                        } else {
+                            this.status = 'run';
+                            this.dy = 0;
+                        }
+
+                        if (this.y > canvas.height - this.height) this.y = canvas.height - this.height;
+                        this.gameFrame = 0;
+                    } else {
+                        this.gameFrame += deltatime;
+                    }
+                }
+
+                render() {
+                    const status = this.statusMap[this.status];
+                    const radiusX = this.width / 2;
+                    const radiusY = this.height / 2;
+                    ctx.strokeStyle = '#fff';
+                    ctx.strokeRect(this.x, this.y, this.width, this.height);
+                    ctx.beginPath();
+                    ctx.arc(this.x + radiusX, this.y + radiusY, radiusX, 0, Math.PI * 2, false);
+                    ctx.stroke();
+                    ctx.closePath();
+                    ctx.drawImage(this.sprite, this.frame * this.spriteWidth, status.y, this.spriteWidth, this.spriteWidth, this.x, this.y, this.width, this.height);
+                }
+
+                isOnGround() {
+                    return this.y >= canvas.height - this.height;
+                }
+            }
+
+            class Background {
+                constructor() {
+                    this.sprite = map.background_single;
+                    this.spriteWidth = 2400;
+                    this.spriteHeight = 720;
+                    this.scale = (this.spriteWidth * canvas.height) / this.spriteHeight / 2400;
+                    this.width = this.spriteWidth * this.scale;
+                    this.height = this.spriteHeight * this.scale;
+                    this.x = 0;
+                    this.dx = 5;
+                    this.y = 0;
+                }
+
+                restart() {
+                    this.x = 0;
+                }
+
+                update() {
+                    this.x -= this.dx;
+                    if (this.x < 0 - this.width) this.x = 0;
+                }
+
+                render() {
+                    ctx.drawImage(this.sprite, this.x, this.y, this.width, this.height);
+                    ctx.drawImage(this.sprite, this.x + this.width - 1, this.y, this.width, this.height);
+                }
+            }
+
+            class Enemy {
+                constructor() {
+                    this.scale = 0.5;
+                    this.sprite = map.enemy_1;
+                    this.spriteWidth = 160;
+                    this.spriteHeight = 119;
+                    this.spriteFrame = 6;
+                    this.width = this.spriteWidth * this.scale;
+                    this.height = this.spriteHeight * this.scale;
+                    this.x = canvas.width - this.width;
+                    this.y = canvas.height - (this.height + 0);
+                    this.dx = 8;
+                    this.frameX = 0;
+                    this.fps = 20;
+                    this.frameTimer = 0;
+                    this.frameInterval = 1000 / this.fps;
+                    this.markForDeletion = false;
+                }
+
+                update(deltatime) {
+                    if (this.frameTimer > this.frameInterval) {
+                        if (this.frameX >= this.spriteFrame - 1) this.frameX = 0;
+                        else this.frameX++;
+                        this.frameTimer = 0;
+                    } else {
+                        this.frameTimer += deltatime;
+                    }
+
+                    this.x -= this.dx;
+
+                    if (this.x < 0 - this.width) {
+                        this.markForDeletion = true;
+                        score++;
+                    }
+                }
+
+                render() {
+                    const radiusX = this.width / 2;
+                    const radiusY = this.height / 2;
+                    ctx.strokeStyle = '#fff';
+                    ctx.strokeRect(this.x, this.y, this.width, this.height);
+                    ctx.beginPath();
+                    ctx.arc(this.x + radiusX, this.y + radiusY, radiusX, 0, Math.PI * 2, false);
+                    ctx.stroke();
+                    ctx.closePath();
+                    ctx.drawImage(this.sprite, this.frameX * this.spriteWidth, 0, this.spriteWidth, this.spriteHeight, this.x, this.y, this.width, this.height);
+                }
+            }
+
+            function handleEnemies(deltatime) {
+                if (enemyTime > nextEnemyInterval) {
+                    enemies.push(new Enemy());
+                    enemyTime = 0;
+                } else {
+                    enemyTime += deltatime;
+                }
+
+                enemies.forEach(enemy => {
+                    enemy.render();
+                    enemy.update(deltatime);
+                });
+
+                enemies = enemies.filter(enemy => !enemy.markForDeletion);
+            }
+
+            function displayStatusText() {
+                ctx.textAlign = 'left';
+                ctx.fillStyle = 'black';
+                ctx.font = '30px Impact';
+                ctx.fillText(`Score : ${score}`, 10, 30);
+
+                if (gameOver) {
+                    ctx.textAlign = 'center';
+                    ctx.fillStyle = 'white';
+                    ctx.font = '80px Impact';
+                    ctx.fillText('Game Over', canvas.width / 2, canvas.height / 2);
+                    ctx.font = '50px Impact';
+                    ctx.fillText('Press "Enter" to restart', canvas.width / 2, canvas.height / 2 + 50);
+                    ctx.fillStyle = 'black';
+                    ctx.font = '80px Impact';
+                    ctx.fillText('Game Over', canvas.width / 2 - 2, canvas.height / 2 - 2);
+                    ctx.font = '50px Impact';
+                    ctx.fillText('Press "Enter" to restart', canvas.width / 2 - 2, canvas.height / 2 + 50 - 2);
+                }
+            }
+
+            function restart() {
+                enemies = [];
+                deltatime = 0;
+                lasttime = 0;
+                enemyTime = 0;
+                score = 0;
+                gameOver = false;
+                player.restart();
+                background.restart();
+                animate(0);
+            }
+
+            let inputHandler = new InputHandler();
+            let player = new Player();
+            let background = new Background();
+
+            let deltatime = 0;
+            let lasttime = 0;
+            let enemyTime = 0;
+            let nextEnemyInterval = 2000;
+            let score = 0;
+            let gameOver = false;
+
+            function animate(timestamp) {
+                deltatime = timestamp - lasttime;
+                lasttime = timestamp;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                // background.update();
+                background.render();
+
+                player.update(deltatime, inputHandler, enemies);
+                player.render();
+
+                displayStatusText();
+                handleEnemies(deltatime);
+                !gameOver && requestAnimationFrame(animate);
+            }
+
+            animate(0);
+        });
+    </script>
+</body>
+
+</html>

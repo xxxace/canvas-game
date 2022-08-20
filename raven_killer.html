@@ -22,7 +22,7 @@
 <body>
     <div id="can"></div>
     <button id="the-world">砸挖路哆</button>
-    <button id="continua">继续</button>
+    <button id="continue">继续</button>
     <script>
         let missingCount = 0;
         const resourceLoader = new ResourceLoader({
@@ -201,7 +201,7 @@
             });
 
             const theWorld = document.getElementById('the-world');
-            const continua = document.getElementById('continua');
+            const continua = document.getElementById('continue');
             theWorld.addEventListener('click', () => {
                 cancelAnimationFrame(animationFrameKey);
                 animationFrameKey = null;
