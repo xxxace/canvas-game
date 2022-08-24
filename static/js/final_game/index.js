@@ -2,7 +2,7 @@ import Game from "./game.js";
 
 const canvasFactory = new CanvasFactory({
     el: '#can',
-    width: 1300,
+    width: 500,
     height: 500
 });
 const canvas = canvasFactory.canvas;
@@ -16,7 +16,10 @@ const resourceLoader = new ResourceLoader({
         layer2: './static/assets/png/layer-2.png',
         layer3: './static/assets/png/layer-3.png',
         layer4: './static/assets/png/layer-4.png',
-        layer5: './static/assets/png/layer-5.png'
+        layer5: './static/assets/png/layer-5.png',
+        enemy_fly: './static/assets/png/enemy_fly.png',
+        enemy_plant: './static/assets/png/enemy_plant.png',
+        enemy_spider_big: './static/assets/png/enemy_spider_big.png',
     }
 });
 

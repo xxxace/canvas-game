@@ -33,7 +33,6 @@ export class Background {
             new Layer(game, resources.layer4, this.width, this.height, 0.8),
             new Layer(game, resources.layer5, this.width, this.height, 1)
         ]
-        console.log(this.layers)
     }
 
     update() {
