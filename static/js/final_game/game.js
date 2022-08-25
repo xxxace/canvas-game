@@ -10,10 +10,16 @@ class Game {
         this.speed = 0;
         this.maxSpeed = 6;
         this.groundMargin = 80;
+        this.maxParticles = 200;
         this.particles = [];
+        this.collisions = [];
+        this.floatingMessages = [];
         this.enemyTimer = 0;
         this.enemyInterval = 1000;
-        this.debug = true;
+        this.time = 0;
+        this.maxTime = 30 * 1000;
+        this.gameOver = false;
+        this.debug = false;
         this.player = new Player(this);
         this.input = new InputHandler(this);
         this.input.listen();
@@ -28,6 +34,10 @@ class Game {
     }
 
     update(deltaTime) {
+        this.time += deltaTime;
+
+        if (this.time > this.maxTime) this.gameOver = true;
+
         if (this.enemyTimer > this.enemyInterval) {
             this.addEnemy();
             this.enemyTimer = 0;
@@ -38,10 +48,17 @@ class Game {
         this.backgorund.update();
         this.enemyController.update(deltaTime);
         this.player.update(this.input.keys, deltaTime);
-        this.particles.forEach((particle, i) => {
-            particle.update();
-            if (particle.markedForDeletion) this.particles.splice(i, 1);
-        });
+        this.particles.forEach((particle) => particle.update());
+        if (this.particles.length > this.maxParticles) {
+            this.particles.length = this.maxParticles;
+        }
+
+        this.collisions.forEach((collision) => collision.update(deltaTime));
+        this.floatingMessages.forEach((floatingMessage) => floatingMessage.update());
+
+        this.collisions = this.collisions.filter(collision => !collision.markedForDeletion);
+        this.floatingMessages = this.floatingMessages.filter(floatingMessage => !floatingMessage.markedForDeletion);
+        this.particles = this.particles.filter(particle => !particle.markedForDeletion);
     }
 
     render(context) {
@@ -50,6 +67,8 @@ class Game {
         this.player.render(context);
         this.userInterface.render(context);
         this.particles.forEach((particle) => particle.render(context));
+        this.collisions.forEach((collision) => collision.render(context));
+        this.floatingMessages.forEach((floatingMessage, i) => floatingMessage.render(context));
     }
 }
 

@@ -2,7 +2,7 @@ import Game from "./game.js";
 
 const canvasFactory = new CanvasFactory({
     el: '#can',
-    width: 500,
+    width: 900,
     height: 500
 });
 const canvas = canvasFactory.canvas;
@@ -20,6 +20,10 @@ const resourceLoader = new ResourceLoader({
         enemy_fly: './static/assets/png/enemy_fly.png',
         enemy_plant: './static/assets/png/enemy_plant.png',
         enemy_spider_big: './static/assets/png/enemy_spider_big.png',
+        fire: './static/assets/png/fire.png',
+        boom: './static/assets/png/boom.png',
+        iceAttack: './static/assets/sound/IceAttack.wav',
+        heart: './static/assets/png/heart.png'
     }
 });
 
@@ -38,7 +42,7 @@ function run() {
 
         game.update(deltaTime);
         game.render(ctx);
-        requestAnimationFrame(animate);
+        if (!game.gameOver) requestAnimationFrame(animate);
     }
 
     animate(0)

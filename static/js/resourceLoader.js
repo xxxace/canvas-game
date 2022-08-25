@@ -1,3 +1,10 @@
+function getResourceInstanceBySrc(src) {
+  const audioRegx = /\.(wav|mp3|mp4)$/;
+  const imageRegx = /\.(jpg|jpeg|png|ico)$/;
+
+  if (audioRegx.test(src)) return new Audio();
+  if (imageRegx.test(src)) return new Image();
+}
 class ResourceLoader {
   constructor(options) {
     this.map = options.resources;
@@ -8,16 +15,23 @@ class ResourceLoader {
     const keys = Object.keys(this.map);
 
     keys.forEach((key, i) => {
-      const resource = new Image();
-      resource.src = this.map[key];
+      const src = this.map[key];
+      const resource = getResourceInstanceBySrc(src);
+      resource.src = src;
 
-      resource.onload = () => {
+      const loader = () => {
         count++;
         this.map[key] = resource;
         if (count === keys.length) {
           callback(this.map);
         }
       };
+
+      if (resource.tagName === 'AUDIO') {
+        resource.oncanplaythrough = loader();
+      } else {
+        resource.onload = loader();
+      }
     });
   }
 }

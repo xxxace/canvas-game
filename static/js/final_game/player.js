@@ -1,8 +1,10 @@
-import { StandingState, JumpingState, RunningState, SittingState, FallingState, RollingState } from "./state.js";
-
+import { StandingState, JumpingState, RunningState, SittingState, FallingState, RollingState, DivingState, HitState } from "./state.js";
+import CollisionAnimation from './collisionAniamtion.js';
+import FloatingMessage from './floatingMessage.js';
 class Player {
     constructor(game) {
         this.game = game;
+        this.lives = 5;
         this.scale = 0.2;
         this.spriteWidth = 573;
         this.spriteHeight = 523;
@@ -26,7 +28,9 @@ class Player {
             new RunningState(game),
             new JumpingState(game),
             new FallingState(game),
-            new RollingState(game)
+            new RollingState(game),
+            new DivingState(game),
+            new HitState(game)
         ];
     }
 
@@ -49,7 +53,7 @@ class Player {
         // horizontal movement
         this.x += this.speed;
 
-        if (!input.includes('ArrowDown')) {
+        if (!input.includes('ArrowDown') && this.currentState !== this.states[7]) {
             if (input.includes('ArrowLeft')) this.speed = -this.maxSpeed;
             else if (input.includes('ArrowRight')) this.speed = this.maxSpeed;
             else this.speed = 0;
@@ -98,8 +102,17 @@ class Player {
                 enemy.y + enemy.height > this.y
             ) {
                 enemy.emit('delete');
-                this.game.score++;
-                console.log('collision detected')
+                if (this.currentState === this.states[5] || this.currentState === this.states[6]) {
+                    this.game.score++;
+                    const floatingMessage = new FloatingMessage(this.game, '+1', enemy.x + enemy.width * 0.5, enemy.y + enemy.height * 0.5, 60, 30);
+                    this.game.floatingMessages.push(floatingMessage);
+                } else {
+                    this.setState(7, 0);
+                    this.lives--;
+                    if (this.lives === 0) this.game.gameOver = true;
+                }
+                const collision = new CollisionAnimation(this.game, enemy.x + enemy.width * 0.5, enemy.y + enemy.height * 0.5);
+                this.game.collisions.push(collision);
             } else {
 
             }
