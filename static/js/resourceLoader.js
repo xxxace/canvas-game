@@ -1,6 +1,6 @@
 function getResourceInstanceBySrc(src) {
-  const audioRegx = /\.(wav|mp3|mp4)$/;
-  const imageRegx = /\.(jpg|jpeg|png|ico)$/;
+  const audioRegx = /\.(wav|mp3|mov|cda|ape|aac|ra|midi|flac|wma)$/;
+  const imageRegx = /\.(jpe?g|png|ico|gif|raw|tiff|bmp)$/;
 
   if (audioRegx.test(src)) return new Audio();
   if (imageRegx.test(src)) return new Image();
