@@ -205,18 +205,22 @@
             const theWorld = document.getElementById('the-world');
             const continua = document.getElementById('continue');
             theWorld.addEventListener('click', () => {
-                cancelAnimationFrame(animationFrameKey);
-                animationFrameKey = null;
+                // cancelAnimationFrame(animationFrameKey);
+                // animationFrameKey = null;
+                ctx.pause = true;
             });
 
             continua.addEventListener('click', (e) => {
-                cancelAnimationFrame(animationFrameKey);
-                animationFrameKey = requestAnimationFrame(animate);
+                // cancelAnimationFrame(animationFrameKey);
+                // animationFrameKey = requestAnimationFrame(animate);
+                ctx.pause = false;
+                startGame(ctx);
             });
         });
 
         async function startGame(ctx) {
             for await (const deltaTime of gameLoop()) {
+                if (ctx.pause) break;
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
 
                 timeToNextRaven += deltaTime;
@@ -257,7 +261,7 @@
 
         async function* gameLoop() {
             let prevTime = await animationFrame();
-           
+
             while (true) {
                 let currentTime = await animationFrame();
                 let deltaTime = currentTime - prevTime;
