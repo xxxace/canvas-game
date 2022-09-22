@@ -173,8 +173,9 @@
             animationFrameKey = requestAnimationFrame(animate);
         }
 
-        resourceLoader.load((map) => {
-            animate(0);
+        resourceLoader.load(async (map) => {
+            // animate(0);
+            startGame(ctx);
 
             canvas.addEventListener('click', (e) => {
                 const { offsetX, offsetY } = e;
@@ -213,6 +214,57 @@
                 animationFrameKey = requestAnimationFrame(animate);
             });
         });
+
+        async function startGame(ctx) {
+            for await (const deltaTime of gameLoop()) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                timeToNextRaven += deltaTime;
+                if (timeToNextRaven > ravenIterval) {
+                    ravens.push(new Raven());
+                    timeToNextRaven = 0;
+                }
+
+                // clicks.forEach(click => {
+                //     ctx.beginPath();
+                //     ctx.fillStyle = 'red';
+                //     ctx.fillRect(click.x, click.y, 10, 10);
+                //     ctx.closePath();
+                // });
+
+                ravens.forEach(raven => {
+                    raven.update(deltaTime);
+                    raven.render();
+                });
+
+                explodings.forEach(exploding => {
+                    exploding.update();
+                    exploding.render();
+                });
+
+                ravens = ravens.filter(r => r.visible);
+                explodings = explodings.filter(e => e.frame < 5);
+                ctx.beginPath();
+                ctx.fillStyle = 'black';
+                ctx.font = '20px Impact';
+                ctx.fillText(`score: ${hitCount}`, 10, 30);
+                ctx.fillText(`missing: ${missingCount}`, 10, 60);
+                ctx.closePath();
+            }
+        }
+
+        function animationFrame() { return new Promise(requestAnimationFrame); }
+
+        async function* gameLoop() {
+            let prevTime = await animationFrame();
+           
+            while (true) {
+                let currentTime = await animationFrame();
+                let deltaTime = currentTime - prevTime;
+                prevTime = currentTime;
+                yield deltaTime;
+            }
+        }
     </script>
 </body>
 
